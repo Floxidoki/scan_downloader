@@ -32,7 +32,7 @@ class Download:
 
         self._current_chap = self._scan.get_deb()
 
-    def process(self):
+    def launch_process(self):
         """
         Permet de gérer le téléchargement du scan.
         """
