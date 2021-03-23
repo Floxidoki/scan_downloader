@@ -1,5 +1,8 @@
 # IMPORT SYSTEME
+import os
+
 import requests
+import img2pdf
 
 # IMPORT PROJET
 from programs import utils as ul
@@ -22,20 +25,21 @@ class Download:
         if isinstance(scan, Scan):
             self._scan = scan
         else:
-            raise TypeError("Ne peut télécharger que des scans")
+            raise TypeError("Ne peut télécharger que des scans.")
 
         self._creationInfo = CreationInfo()
 
-        self._current_chap = None
+        self._current_chap = self._scan.get_deb()
 
     def process(self):
         """
         Permet de gérer le téléchargement du scan.
         """
-        for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
 
-            # Crée le répertoire où le chapitre sera téléchargé
-            ul.create_repository(self._repository, str(chap_id))
+        # Crée le répertoire où le chapitre sera téléchargé
+        ul.create_repository(self._repository)
+
+        for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
 
             self._current_chap = chap_id
             exist = True
@@ -46,14 +50,17 @@ class Download:
                 format_id = ul.format_num(str(page_id))
 
                 self._creationInfo.set_web(ul.web_path(self._scan.get_manga_name(), str(chap_id), str(format_id)))
-                self._creationInfo.set_name(ul.file_name(str(format_id)))
-                self._creationInfo.set_save(ul.save_path(self._repository, str(chap_id)))
+                self._creationInfo.set_image_name(ul.image_name(str(format_id)))
+                self._creationInfo.set_save(ul.save_path(self._repository))
 
                 exist = self.download()
                 page_id += 1
 
+            self._creationInfo.set_pdf_name(ul.pdf_name(str(chap_id)))
+            ul.generate_pdf(self._creationInfo)
+
             # Calcul la progression du téléchargement
-            print(self.progress())
+            print(str(self.progress()) + "%")
 
     def download(self):
         """
@@ -76,7 +83,7 @@ class Download:
 
         :param img_data: (Response) l'image à sauvergarder.
         """
-        open(self._creationInfo.get_save() + self._creationInfo.get_name(), 'wb').write(img_data.content)
+        open(self._creationInfo.get_save() + self._creationInfo.get_image_name(), 'wb').write(img_data.content)
 
     def img_exist(self, img_data):
         """
@@ -92,7 +99,8 @@ class Download:
 
         :return: pourcentage: (float) le pourcentage de progression
         """
-        return round(((self._current_chap - self._scan.get_deb()) / (self._scan.get_end() - self._scan.get_deb())) * 100, 2)
+        return round(
+            ((self._current_chap - self._scan.get_deb()) / (self._scan.get_end() - self._scan.get_deb())) * 100, 2)
 
     def __str__(self):
         """

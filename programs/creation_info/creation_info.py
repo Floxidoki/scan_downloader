@@ -6,7 +6,8 @@ class CreationInfo:
         initialiseur de la classe CreationInfo.
         """
         self._web = None
-        self._name = None
+        self._image_name = None
+        self._pdf_name = None
         self._save = None
 
     # WEB
@@ -18,14 +19,23 @@ class CreationInfo:
         """Permet de fixer la valeur de web à web_path"""
         self._web = web_path
 
-    # NAME
-    def get_name(self):
-        """Permet de récupérer name."""
-        return self._name
+    # IMAGE NAME
+    def get_image_name(self):
+        """Permet de récupérer image_name."""
+        return self._image_name
 
-    def set_name(self, file_name):
-        """Permet de fixer la valeur de name à file_name"""
-        self._name = file_name
+    def set_image_name(self, name):
+        """Permet de fixer la valeur de image_name à name"""
+        self._image_name = name
+
+    # PDF NAME
+    def get_pdf_name(self):
+        """Permet de récupérer pdf_name."""
+        return self._pdf_name
+
+    def set_pdf_name(self, name):
+        """Permet de fixer la valeur de pdf_name à name"""
+        self._pdf_name = name
 
     # SAVE
     def get_save(self):
