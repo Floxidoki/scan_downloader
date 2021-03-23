@@ -10,22 +10,25 @@ from programs.creation_info.creation_info import CreationInfo
 ''' PDF '''
 
 
-def generate_pdf(creation_info):
+def generate_pdf(creation_info, nb_pages):
     """
     Permet de générer un fichier pdf à partir des différentes planches du chapitre.
 
-    :param creation_info: les informations nécessaires à la création.
+    :param creation_info: (CreationInfo) les informations nécessaires à la création.
+    :param nb_pages: (int) le nombre de page du pdf.
     """
     if not isinstance(creation_info, CreationInfo):
         raise TypeError("Ne peut créer un PDF qu'à l'aide d'un CreationInfo.")
 
     with open(creation_info.get_save() + creation_info.get_pdf_name(), "wb") as f:
-        f.write(img2pdf.convert(
-            [os.path.join(f"{creation_info.get_save()}", i)
-             for i in os.listdir(f"{creation_info.get_save()}")
-             if i.endswith(".jpg")]))
-
-    suppr_img(creation_info.get_save())
+        try:
+            f.write(img2pdf.convert(
+                [os.path.join(f"{creation_info.get_save()}", i)
+                 for i in os.listdir(f"{creation_info.get_save()}")
+                 if i.endswith(".jpg") and int(i.split(".")[0]) < nb_pages - 1]))
+        except IndexError:
+            raise IndexError("Le numéro du (premier || dernier) chapitre est supérieur "
+                             "au nombre de chapitres existants.")
 
 
 def suppr_img(repertory):

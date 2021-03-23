@@ -1,5 +1,6 @@
 # IMPORT SYSTEME
 import os
+import shutil
 
 import requests
 import img2pdf
@@ -37,6 +38,9 @@ class Download:
         """
 
         # Crée le répertoire où le chapitre sera téléchargé
+        if os.path.exists(self._repository):
+            shutil.rmtree(self._repository)
+
         ul.create_repository(self._repository)
 
         for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
@@ -57,10 +61,12 @@ class Download:
                 page_id += 1
 
             self._creationInfo.set_pdf_name(ul.pdf_name(str(chap_id)))
-            ul.generate_pdf(self._creationInfo)
+            ul.generate_pdf(self._creationInfo, page_id)
 
             # Calcul la progression du téléchargement
             print(str(self.progress()) + "%")
+
+        ul.suppr_img(self._creationInfo.get_save())
 
     def download(self):
         """
@@ -100,7 +106,8 @@ class Download:
         :return: pourcentage: (float) le pourcentage de progression
         """
         return round(
-            ((self._current_chap - self._scan.get_deb()) / (self._scan.get_end() - self._scan.get_deb())) * 100, 2)
+            (((self._current_chap + 1) - self._scan.get_deb()) / ((self._scan.get_end() - self._scan.get_deb()) + 1)) *
+            100, 2)
 
     def __str__(self):
         """
