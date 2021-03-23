@@ -1,4 +1,7 @@
 # IMPORT PROJET
-from programs.download import download_scan
+from programs.download import Download, Scan
 
-download_scan("MHA", "my-hero-academia", 190, 307)
+scan = Scan("my-hero-academia", 190, 307)
+MHA = Download("MHA", scan)
+
+MHA.process()

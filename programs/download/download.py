@@ -1,32 +1,101 @@
+# IMPORT SYSTEME
+import requests
+
 # IMPORT PROJET
 from programs import utils as ul
+from programs.scan.scan import Scan
+from programs.creation_info.creation_info import CreationInfo
 
 
-def download_scan(repository, manga_name, deb, end):
-    """
-    :param repository: le nom du répertoire de sauvegarde.
-    :param manga_name: le nom du manga à télécharger.
-    :param deb: le numéro du chapitre où commencer le téléchargement.
-    :param end: le numéro du chapitre où finir le téléchargement.
+class Download:
+    """Définition la classe Download"""
 
-    :return: web_path: l'adresse https de l'image à récupérer.
-    :return: save_path: le chemin où sauvegarder l'image.
-    """
-    for chap_id in range(deb, end + 1):
+    def __init__(self, repository, scan):
+        """
+        Initialiseur de la classe Download.
 
-        # Crée le répertoire où le chapitre sera téléchargé
-        ul.create_repository(repository, str(chap_id))
+        :param repository: (str) le nom du répertoir de sauvegarde.
+        :param scan: (str) le scan à télécharger.
+        """
+        self._repository = repository
 
-        exist = True
-        page_id = 0
+        if isinstance(scan, Scan):
+            self._scan = scan
+        else:
+            raise TypeError("Ne peut télécharger que des scans")
 
-        # Tant que la page du chapitre existe, la télécharge dans le répertoire
-        while exist:
-            format_id = ul.format_num(str(page_id))
-            exist = ul.img_download(ul.web_path(manga_name, str(chap_id), str(format_id)),
-                                    ul.file_name(str(format_id)),
-                                    ul.save_path(repository, str(chap_id)))
-            page_id += 1
+        self._creationInfo = CreationInfo()
 
-        # Calcul la progression du téléchargement
-        ul.progress(deb, end, chap_id)
+        self._current_chap = None
+
+    def process(self):
+        """
+        Permet de gérer le téléchargement du scan.
+        """
+        for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
+
+            # Crée le répertoire où le chapitre sera téléchargé
+            ul.create_repository(self._repository, str(chap_id))
+
+            self._current_chap = chap_id
+            exist = True
+            page_id = 0
+
+            # Tant que la page du chapitre existe, la télécharge dans le répertoire
+            while exist:
+                format_id = ul.format_num(str(page_id))
+
+                self._creationInfo.set_web(ul.web_path(self._scan.get_manga_name(), str(chap_id), str(format_id)))
+                self._creationInfo.set_name(ul.file_name(str(format_id)))
+                self._creationInfo.set_save(ul.save_path(self._repository, str(chap_id)))
+
+                exist = self.download()
+                page_id += 1
+
+            # Calcul la progression du téléchargement
+            print(self.progress())
+
+    def download(self):
+        """
+        Permet de récupérer une planche d'un scan depuis son adresse https et de l'enregistrer.
+
+        :return: (bool) True si la planche existe sinon False.
+        """
+        # Récupère l'image depuis son adresse https
+        img_data = requests.get(self._creationInfo.get_web(), allow_redirects=True)
+
+        # Si elle existe, l'ajoute dans le répertoire prévu
+        if self.img_exist(img_data):
+            self.save_img(img_data)
+            return True
+        return False
+
+    def save_img(self, img_data):
+        """
+        Permet d'enregistrer une image avec le chemin et le nom voulu.
+
+        :param img_data: (Response) l'image à sauvergarder.
+        """
+        open(self._creationInfo.get_save() + self._creationInfo.get_name(), 'wb').write(img_data.content)
+
+    def img_exist(self, img_data):
+        """
+        Permet de savoir si l'image renvoie un erreur 404 (n'existe pas).
+
+        :param img_data: (Response) l'image à vérifier.
+        """
+        return img_data.__str__() != "<Response [404]>"
+
+    def progress(self):
+        """
+        Permet de calculer la progression du téléchargement.
+
+        :return: pourcentage: (float) le pourcentage de progression
+        """
+        return round(((self._current_chap - self._scan.get_deb()) / (self._scan.get_end() - self._scan.get_deb())) * 100, 2)
+
+    def __str__(self):
+        """
+        Permet de représenter la progression du téléchargement.
+        """
+        str(self.progress())

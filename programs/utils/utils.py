@@ -1,7 +1,24 @@
 # IMPORT SYSTEME
-import requests
 import os
 from os import sep
+
+''' CALCUL '''
+
+
+def format_num(num):
+    """
+    Permet de formater un nombre.
+
+    :param num: (str) le nombre à reformater
+
+    :return: (str) le nombre après reformatation
+    """
+    if len(num) < 2:
+        return "0" + num
+    return num
+
+
+''' PATH '''
 
 
 def create_repository(repository_1, repository_2):
