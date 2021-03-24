@@ -3,7 +3,6 @@ import os
 import shutil
 
 import requests
-import img2pdf
 
 # IMPORT PROJET
 from programs import utils as ul
@@ -12,96 +11,118 @@ from programs.creation_info.creation_info import CreationInfo
 
 
 class Download:
-    """Définition la classe Download"""
+    """Définition de la classe Download."""
 
-    def __init__(self, repository, scan):
+    def __init__(self, repository, scan, web_path):
         """
         Initialiseur de la classe Download.
 
         :param repository: (str) le nom du répertoir de sauvegarde.
         :param scan: (str) le scan à télécharger.
+        :param web_path: (WebPath) la base du lien de téléchargement.
         """
-        self._repository = repository
-
         if isinstance(scan, Scan):
             self._scan = scan
         else:
             raise TypeError("Ne peut télécharger que des scans.")
 
+        self._repository = repository
+        self._web_path = web_path
         self._creationInfo = CreationInfo()
-
         self._current_chap = self._scan.get_deb()
 
     def launch_process(self):
         """
-        Permet de gérer le téléchargement du scan.
+        Processus de téléchargement des chapitres.
         """
+        self._init_rep()
 
-        # Crée le répertoire où le chapitre sera téléchargé
+        for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
+            exist, page_id = self._init_chap(chap_id)
+
+            while exist:
+                self._init_info(chap_id, page_id)
+                exist = self._download()
+                page_id += 1
+
+            self._generate_pdf(chap_id, page_id)
+            print(str(self._progress()) + "%")
+
+        ul.suppr_img(self._creationInfo.get_save())
+
+    def _init_rep(self):
+        """
+        Initialise le répertoire de destination.
+        """
         if os.path.exists(self._repository):
             shutil.rmtree(self._repository)
 
         ul.create_repository(self._repository)
 
-        for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
-
-            self._current_chap = chap_id
-            exist = True
-            page_id = 0
-
-            # Tant que la page du chapitre existe, la télécharge dans le répertoire
-            while exist:
-                format_id = ul.format_num(str(page_id))
-
-                self._creationInfo.set_web(ul.web_path(self._scan.get_manga_name(), str(chap_id), str(format_id)))
-                self._creationInfo.set_image_name(ul.image_name(str(format_id)))
-                self._creationInfo.set_save(ul.save_path(self._repository))
-
-                exist = self.download()
-                page_id += 1
-
-            self._creationInfo.set_pdf_name(ul.pdf_name(str(chap_id)))
-            ul.generate_pdf(self._creationInfo, page_id)
-
-            # Calcul la progression du téléchargement
-            print(str(self.progress()) + "%")
-
-        ul.suppr_img(self._creationInfo.get_save())
-
-    def download(self):
+    def _init_chap(self, chap):
         """
-        Permet de récupérer une planche d'un scan depuis son adresse https et de l'enregistrer.
+        Initialise les variables relatives au chapitre à leur valeurs de départ.
+
+        :param chap: (str) le numéro du chapitre.
+        """
+        self._current_chap = chap
+        return True, 0
+
+    def _init_info(self, chap_id, page_id):
+        """
+        Initialise les informations de création.
+
+        :param chap_id: (str) le numéro du chapitre.
+        :param page_id: (str) le numéro de la page.
+        """
+        format_id = ul.format_num(str(page_id))
+
+        self._creationInfo.set_web(ul.web_path(self._web_path, str(chap_id), str(format_id)))
+        self._creationInfo.set_image_name(ul.image_name(str(format_id)))
+        self._creationInfo.set_save(ul.save_path(self._repository))
+
+    def _generate_pdf(self, chap_id, nb_pages):
+        """
+        Génère le pdf pour un chapitre.
+
+        :param chap_id: (str) le numéro du chapitre.
+        :param nb_pages: (str) le nombre de pages du chapitre.
+        """
+        self._creationInfo.set_pdf_name(ul.pdf_name(str(chap_id)))
+        ul.generate_pdf(self._creationInfo, nb_pages)
+
+    def _download(self):
+        """
+        Récupérer une page depuis son adresse https et l'enregistre.
 
         :return: (bool) True si la planche existe sinon False.
         """
-        # Récupère l'image depuis son adresse https
         img_data = requests.get(self._creationInfo.get_web(), allow_redirects=True)
 
-        # Si elle existe, l'ajoute dans le répertoire prévu
-        if self.img_exist(img_data):
-            self.save_img(img_data)
+        if self._img_exist(img_data):
+            self._save_img(img_data)
             return True
         return False
 
-    def save_img(self, img_data):
+    def _save_img(self, img_data):
         """
-        Permet d'enregistrer une image avec le chemin et le nom voulu.
+        Eenregistrer une image.
 
         :param img_data: (Response) l'image à sauvergarder.
         """
         open(self._creationInfo.get_save() + self._creationInfo.get_image_name(), 'wb').write(img_data.content)
 
-    def img_exist(self, img_data):
+    def _img_exist(self, img_data):
         """
-        Permet de savoir si l'image renvoie un erreur 404 (n'existe pas).
+        Permet de savoir si l'image existe.
 
         :param img_data: (Response) l'image à vérifier.
         """
         return img_data.__str__() != "<Response [404]>"
 
-    def progress(self):
+    def _progress(self):
         """
-        Permet de calculer la progression du téléchargement.
+        Calcule la progression du téléchargement.
 
         :return: pourcentage: (float) le pourcentage de progression
         """
@@ -111,6 +132,6 @@ class Download:
 
     def __str__(self):
         """
-        Permet de représenter la progression du téléchargement.
+        Représentation du download.
         """
-        str(self.progress())
+        return str(self._progress())

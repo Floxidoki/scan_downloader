@@ -1,1 +1,1 @@
-from .creation_info import *
+from .creation_info import CreationInfo

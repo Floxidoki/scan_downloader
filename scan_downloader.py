@@ -1,13 +1,12 @@
 # IMPORT PROJET
 import sys
 
-from programs.download import Download, Scan
+from programs.download import Scan
+from programs.pre_download.pre_download import PreDownload
+from programs.web_path.web_path import *
 
 if len(sys.argv) == 5:
-
-    scan = Scan(str(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]))
-    download = Download(str(sys.argv[1]), scan)
-    download.launch_process()
+    PreDownload(str(sys.argv[1]), Scan(str(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])))
 else:
     print("Vous devez rentrer 4 arguments:"
           "\n- Le nom du sous dossier qui recevra les scans"

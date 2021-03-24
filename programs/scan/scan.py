@@ -10,13 +10,6 @@ class Scan:
         :param end: (str) le scan où finir le téléchargement.
         """
         self._manga_name = manga_name
-
-        if deb <= 0:
-            raise ValueError("Le numéro du premier scan doit être supérieur à 0.")
-
-        if deb > end:
-            raise ValueError("Le numéro du premier scan doit être inférieur à celui du dernier.")
-
         self._deb = deb
         self._end = end
 
