@@ -45,3 +45,9 @@ class CreationInfo:
     def set_save(self, save_path):
         """Permet de fixer la valeur de save à save_path"""
         self._save = save_path
+
+    def __str__(self):
+        print("web: " + self._web + "\n" +
+              "image_name: " + self._image_name + "\n" +
+              "_pdf_name: " + self._pdf_name + "\n" +
+              "_save: " + self._save + "\n")

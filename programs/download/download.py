@@ -28,6 +28,7 @@ class Download:
 
         self._repository = repository
         self._web_path = web_path
+        self._convention = 0
         self._creationInfo = CreationInfo()
         self._current_chap = self._scan.get_deb()
 
@@ -38,6 +39,9 @@ class Download:
         self._init_rep()
 
         for chap_id in range(self._scan.get_deb(), self._scan.get_end() + 1):
+            # Vérifie comment sont formater les liens du chapitre
+            self._convention_test(str(chap_id))
+
             exist, page_id = self._init_chap(chap_id)
 
             while exist:
@@ -45,10 +49,17 @@ class Download:
                 exist = self._download()
                 page_id += 1
 
-            self._generate_pdf(chap_id, page_id)
+            self._generate_pdf(chap_id)
             print(str(self._progress()) + "%")
 
-        ul.suppr_img(self._creationInfo.get_save())
+    def _convention_test(self, chap_id):
+        """
+        Permet de connaitre la convention de nommage de ce chapitre.
+        """
+        link = self._web_path + "/" + chap_id + "/1.jpg"
+        img_data = requests.get(link, allow_redirects=True)
+        if self._img_exist(img_data):
+            self._convention = 1
 
     def _init_rep(self):
         """
@@ -66,7 +77,9 @@ class Download:
         :param chap: (str) le numéro du chapitre.
         """
         self._current_chap = chap
-        return True, 0
+        if self._convention == 0:
+            return True, 0
+        return True, 1
 
     def _init_info(self, chap_id, page_id):
         """
@@ -75,21 +88,20 @@ class Download:
         :param chap_id: (str) le numéro du chapitre.
         :param page_id: (str) le numéro de la page.
         """
-        format_id = ul.format_num(str(page_id))
+        format_id = ul.format_num(str(page_id), self._convention)
 
         self._creationInfo.set_web(ul.web_path(self._web_path, str(chap_id), str(format_id)))
         self._creationInfo.set_image_name(ul.image_name(str(format_id)))
         self._creationInfo.set_save(ul.save_path(self._repository))
 
-    def _generate_pdf(self, chap_id, nb_pages):
+    def _generate_pdf(self, chap_id):
         """
         Génère le pdf pour un chapitre.
 
         :param chap_id: (str) le numéro du chapitre.
-        :param nb_pages: (str) le nombre de pages du chapitre.
         """
         self._creationInfo.set_pdf_name(ul.pdf_name(str(chap_id)))
-        ul.generate_pdf(self._creationInfo, nb_pages)
+        ul.generate_pdf(self._creationInfo)
 
     def _download(self):
         """
